@@ -1,0 +1,28 @@
+name: submission
+
+services:
+  app:
+    ports:
+      - "59111:3000"
+
+  # One-shot seeder — run via docker_build.sh, not started automatically.
+  # Uses the same image as app but skips the normal entrypoint.
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: ["node", "scripts/seed.ts"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_APP_USER}:${POSTGRES_APP_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - submission-private
+    restart: no
+
+networks:
+  submission-app:
+    external: true
+    name: nginx-proxy-manager-app-1

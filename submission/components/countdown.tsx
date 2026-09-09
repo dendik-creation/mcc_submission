@@ -29,9 +29,14 @@ export function Countdown({
   // Resync during render when the server sends a fresh value, per React's
   // "adjusting state when a prop changes" pattern — avoids an extra effect
   // render pass.
+  // Only sync DOWN: server value can arrive slightly ahead of local due to
+  // network round-trip delay, which would jump the display forward and cause
+  // the same second to render twice (double-tick). Ignore upward moves.
   if (remainingMs !== syncedRemainingMs) {
     setSyncedRemainingMs(remainingMs)
-    setDisplayMs(remainingMs)
+    if (remainingMs < displayMs) {
+      setDisplayMs(remainingMs)
+    }
   }
 
   useEffect(() => {

@@ -113,7 +113,7 @@ export function SubmissionsTable({ rows }: { rows: Row[] }) {
                   )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {submission ? new Date(submission.submittedAt).toLocaleString("id-ID") : "-"}
+                  {submission ? new Date(submission.submittedAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }) : "-"}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-2">

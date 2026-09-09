@@ -9,8 +9,11 @@ import { Label } from "@/components/ui/label"
 
 function toLocalInputValue(date: Date | null) {
   if (!date) return ""
+  // ponytail: shift to WIB (UTC+7) then use UTC accessors so this works
+  // correctly on a UTC server (VPS) and a UTC Docker image.
+  const wib = new Date(date.getTime() + 7 * 60 * 60 * 1000)
   const pad = (n: number) => n.toString().padStart(2, "0")
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  return `${wib.getUTCFullYear()}-${pad(wib.getUTCMonth() + 1)}-${pad(wib.getUTCDate())}T${pad(wib.getUTCHours())}:${pad(wib.getUTCMinutes())}`
 }
 
 export function SettingsForm({
