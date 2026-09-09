@@ -1,18 +1,19 @@
+import Link from "next/link"
+
 import { Button } from "@/components/ui/button"
 
-export default function Page() {
+export default function Home() {
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
+    <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-6 text-center">
+      <div>
+        <h1 className="text-2xl font-semibold">Vibe Code Competition MCC 2026</h1>
+        <p className="text-muted-foreground mt-1 text-sm">Competition Operations Dashboard</p>
+      </div>
+      <div className="flex gap-3">
+        <Button render={<Link href="/login/peserta" />}>Login Peserta</Button>
+        <Button render={<Link href="/login/juri" />} variant="outline">
+          Login Juri/Admin
+        </Button>
       </div>
     </div>
   )

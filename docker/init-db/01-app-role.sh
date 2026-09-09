@@ -1,0 +1,24 @@
+#!/bin/sh
+# Runs once, only when the postgres data volume is first initialized.
+# Creates a lower-privilege role for the app runtime, separate from the
+# POSTGRES_USER superuser used for migrations (docs/04-architecture-and-docker.md).
+set -e
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+  DO \$\$
+  BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${POSTGRES_APP_USER}') THEN
+      CREATE ROLE "${POSTGRES_APP_USER}" LOGIN PASSWORD '${POSTGRES_APP_PASSWORD}';
+    END IF;
+  END
+  \$\$;
+
+  GRANT CONNECT ON DATABASE "${POSTGRES_DB}" TO "${POSTGRES_APP_USER}";
+  GRANT USAGE, CREATE ON SCHEMA public TO "${POSTGRES_APP_USER}";
+  GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${POSTGRES_APP_USER}";
+  GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${POSTGRES_APP_USER}";
+  ALTER DEFAULT PRIVILEGES FOR ROLE "${POSTGRES_USER}" IN SCHEMA public
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO "${POSTGRES_APP_USER}";
+  ALTER DEFAULT PRIVILEGES FOR ROLE "${POSTGRES_USER}" IN SCHEMA public
+    GRANT USAGE, SELECT ON SEQUENCES TO "${POSTGRES_APP_USER}";
+EOSQL
