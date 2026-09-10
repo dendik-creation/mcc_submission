@@ -24,9 +24,11 @@ export async function createSession(userId: string) {
   await db.insert(sessions).values({ id, userId, expiresAt })
 
   const cookieStore = await cookies()
+  // ponytail: secure iff APP_URL is https — not NODE_ENV. ws:// never carries Secure cookies.
+  const secure = process.env.APP_URL?.startsWith("https://") ?? false
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure,
     sameSite: "lax",
     path: "/",
     expires: expiresAt,

@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
-import { useRealtimeRefresh } from "@/hooks/use-realtime-refresh"
+import { useRealtimeRefresh, type RealtimeEventPayload } from "@/hooks/use-realtime-refresh"
 import { COMPETITION_STATE_LABEL } from "@/lib/labels"
 
 function format(ms: number) {
@@ -45,12 +45,22 @@ export function ProjectorBoard({
   const [displayMs, setDisplayMs] = useState(remainingMs)
   const [bigMessage, setBigMessage] = useState<string | null>(null)
   const firedThresholds = useRef(new Set<number>())
+  // Ref so the interval closure always sees the latest thresholds without
+  // being in the effect deps. If thresholdSeconds were in deps, every
+  // router.refresh() would produce a new array reference and restart the
+  // interval mid-cycle, causing the timer to stutter.
+  const thresholdSecondsRef = useRef(thresholdSeconds)
+  thresholdSecondsRef.current = thresholdSeconds
 
   // Resync during render when the server sends a fresh value (React's
   // "adjusting state when a prop changes" pattern).
+  // Only sync DOWN: server value can be ahead of local due to network timing,
+  // which would jump the display forward and show the same second twice.
   if (remainingMs !== syncedRemainingMs) {
     setSyncedRemainingMs(remainingMs)
-    setDisplayMs(remainingMs)
+    if (remainingMs < displayMs) {
+      setDisplayMs(remainingMs)
+    }
   }
 
   // Reset which thresholds have fired whenever the competition (re)starts.
@@ -64,7 +74,7 @@ export function ProjectorBoard({
       setDisplayMs((prev) => {
         const next = Math.max(0, prev - 1000)
         const secondsLeft = Math.floor(next / 1000)
-        for (const threshold of thresholdSeconds) {
+        for (const threshold of thresholdSecondsRef.current) {
           if (secondsLeft === threshold && !firedThresholds.current.has(threshold)) {
             firedThresholds.current.add(threshold)
             setBigMessage(`${Math.round(threshold / 60)} menit tersisa`)
@@ -75,7 +85,7 @@ export function ProjectorBoard({
       })
     }, 1000)
     return () => clearInterval(interval)
-  }, [state, thresholdSeconds])
+  }, [state]) // thresholdSeconds intentionally excluded — accessed via thresholdSecondsRef
 
   useEffect(() => {
     if (!bigMessage) return
@@ -83,13 +93,11 @@ export function ProjectorBoard({
     return () => clearTimeout(timeout)
   }, [bigMessage])
 
-  useRealtimeRefresh({
-    token,
-    onEvent: (event) => {
-      // Generic only — never identity, link, or score data (docs/03).
-      if (event.type === "submission_received") toast("Submission baru diterima.")
-    },
-  })
+  const handleEvent = useCallback((event: RealtimeEventPayload) => {
+    if (event.type === "submission_received") toast("Submission baru diterima.")
+  }, [])
+
+  useRealtimeRefresh({ token, onEvent: handleEvent })
 
   const stateStyle = STATE_STYLE[state]
   const progressPct = registeredCount > 0 ? Math.min(100, (submittedCount / registeredCount) * 100) : 0

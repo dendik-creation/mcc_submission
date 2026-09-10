@@ -79,7 +79,7 @@ export default async function DashboardPage() {
                 {SUBMISSION_STATUS_LABEL[submission.status]}
               </Badge>
               <span className="text-muted-foreground">
-                Terkirim {submission.submittedAt.toLocaleString("id-ID")}
+                Terkirim {submission.submittedAt.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}
               </span>
             </div>
           )}
@@ -107,7 +107,7 @@ export default async function DashboardPage() {
               <div key={revision.id} className="border-b pb-2 last:border-0">
                 <p className="break-all">{revision.newUrl}</p>
                 <p className="text-muted-foreground text-xs">
-                  {revision.createdAt.toLocaleString("id-ID")}
+                  {revision.createdAt.toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}
                   {revision.reason ? ` — ${revision.reason}` : ""}
                 </p>
               </div>

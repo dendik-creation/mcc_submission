@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 
 export type RealtimeEventPayload = {
@@ -22,6 +22,14 @@ export function useRealtimeRefresh(options?: {
   const token = options?.token
   const onEvent = options?.onEvent
 
+  // Keep router in a ref so the effect closure always calls the latest version
+  // without putting it in deps. Next.js mutates internal RSC state on each
+  // router.refresh(), which can change the router object reference and
+  // re-trigger the effect — closing and reopening the WS on every refresh,
+  // which floods the server and causes spurious auth redirects.
+  const routerRef = useRef(router)
+  routerRef.current = router
+
   useEffect(() => {
     let ws: WebSocket | null = null
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -31,7 +39,7 @@ export function useRealtimeRefresh(options?: {
 
     function startPollFallback() {
       if (pollTimer) return
-      pollTimer = setInterval(() => router.refresh(), 5000)
+      pollTimer = setInterval(() => routerRef.current.refresh(), 5000)
     }
     function stopPollFallback() {
       if (!pollTimer) return
@@ -49,7 +57,7 @@ export function useRealtimeRefresh(options?: {
         attempt = 0
         setConnected(true)
         stopPollFallback()
-        router.refresh()
+        routerRef.current.refresh()
       }
       ws.onmessage = (event) => {
         try {
@@ -58,7 +66,7 @@ export function useRealtimeRefresh(options?: {
         } catch {
           // ignore malformed frames
         }
-        router.refresh()
+        routerRef.current.refresh()
       }
       ws.onclose = () => {
         setConnected(false)
@@ -79,7 +87,7 @@ export function useRealtimeRefresh(options?: {
       stopPollFallback()
       ws?.close()
     }
-  }, [token, onEvent, router])
+  }, [token, onEvent]) // router intentionally excluded — accessed via routerRef
 
   return { connected }
 }

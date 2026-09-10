@@ -33,8 +33,11 @@ export async function updateCompetitionSettingsAction(
 
   if (!name) return { error: "Nama lomba wajib diisi" }
 
-  const scheduledStartAt = scheduledStartAtRaw ? new Date(scheduledStartAtRaw) : null
-  const scheduledEndAt = scheduledEndAtRaw ? new Date(scheduledEndAtRaw) : null
+  // datetime-local has no timezone — append WIB offset so Node parses as
+  // Asia/Jakarta regardless of the server's system timezone (UTC on VPS).
+  const parseWIB = (raw: string) => (raw ? new Date(raw + ":00+07:00") : null)
+  const scheduledStartAt = parseWIB(scheduledStartAtRaw)
+  const scheduledEndAt = parseWIB(scheduledEndAtRaw)
   const timerThresholdSeconds = thresholdMinutesRaw
     .split(",")
     .map((part) => part.trim())

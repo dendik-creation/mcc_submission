@@ -15,10 +15,12 @@ declare global {
 
 const CHANNEL = "realtime"
 
+// ponytail: always pin to globalThis — bridges the module boundary between
+// server.ts (custom HTTP server) and the Next.js bundle. Without this,
+// production builds get two separate EventEmitter instances and publish()
+// events never reach the WS server's subscribe() handler.
 export const realtimeBus = globalThis.__submissionRealtimeBus ?? new EventEmitter()
-if (process.env.NODE_ENV !== "production") {
-  globalThis.__submissionRealtimeBus = realtimeBus
-}
+globalThis.__submissionRealtimeBus = realtimeBus
 realtimeBus.setMaxListeners(0)
 
 export function publish(event: RealtimeEvent) {
